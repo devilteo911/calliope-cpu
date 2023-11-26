@@ -6,3 +6,4 @@ moviepy
 loguru
 pandas
 whisper-cpp-python
+python-dotenv

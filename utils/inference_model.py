@@ -18,18 +18,3 @@ class whisper_inference_model:
             language="it",
             task="transcribe",
         )
-
-    def get_chunks(self, audio, sr):
-        # Calculate the number of samples in the resampled signal.
-        num_samples = int(len(audio) * self.new_sr / sr)
-
-        # Resample the audio signal.
-        resampled_audio = resample(audio, num_samples)
-
-        # Calculate the number of chunks.
-        num_chunks = int(np.ceil(len(resampled_audio) / self.samples_per_chunk))
-
-        # Split the resampled audio into chunks.
-        chunks = np.array_split(resampled_audio, num_chunks)
-
-        return chunks, num_chunks

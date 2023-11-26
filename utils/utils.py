@@ -13,18 +13,17 @@ def split_string(string: str) -> List[str]:
     :return: a list of strings
     """
     if len(string) < 4096:
-        return [string]
+        yield string
+        return
     words = string.split()
-    result = []
     current_string = ""
     for word in words:
         if len(current_string) + len(word) > 4095:
-            result.append(current_string)
+            yield current_string
             current_string = word
         else:
             current_string += f" {word}"
-    result.append(current_string)
-    return result
+    yield current_string
 
 
 def format_timedelta(td: timedelta) -> str:

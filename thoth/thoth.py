@@ -19,7 +19,7 @@ import librosa
 import pandas as pd
 from dotenv import load_dotenv
 
-#from utils.inference_model import whisper_inference_model
+# from utils.inference_model import whisper_inference_model
 from faster_whisper import WhisperModel
 from loguru import logger
 from moviepy.editor import VideoFileClip
@@ -36,7 +36,7 @@ from telegram.ext import (
 from utils.save_users import save_user
 from utils.utils import format_timedelta, split_string
 
-load_dotenv() 
+load_dotenv()
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "-v",
@@ -67,13 +67,20 @@ else:
         format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} - {message}",
     )
 
-logger.info("Starting Calliope")
+
+logger.info("Starting Thoth...")
 
 # Get the TOKEN for logging in the bot
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 logger.info("Loading model...")
-whisper = WhisperModel("large-v2", device="auto", compute_type="int8", cpu_threads=8, num_workers=8)
+whisper = WhisperModel(
+    "large-v3",
+    device="auto",
+    compute_type="int8",
+    cpu_threads=8,
+    num_workers=8,
+)
 logger.info("Model loaded")
 
 
@@ -101,7 +108,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /stats is issued."""
     logger.info(f"{update.message.from_user.username}: Stats command")
-    file_path = "stast.json"
+    file_path = "stats.json"
 
     try:
         with open(file_path, "r") as f:
@@ -186,16 +193,20 @@ async def stt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         new_file = await context.bot.get_file(file_id)
 
-
         with tempfile.TemporaryDirectory() as temp_dir:
             file_path = os.path.join(temp_dir, "temp_audio.mp3")
             await new_file.download_to_drive(file_path)
             start_time = time.time()
             logger.info("Transcribing...")
             segments, info = whisper.transcribe(file_path, beam_size=5, vad_filter=True)
-            logger.info("Detected language '%s' with probability %f" % (info.language, info.language_probability))
+            logger.info(
+                "Detected language '%s' with probability %f"
+                % (info.language, info.language_probability)
+            )
             transcription = "".join([segment.text for segment in segments])
-            logger.info("Transcription completed in %f seconds" % (time.time() - start_time))
+            logger.info(
+                "Transcription completed in %f seconds" % (time.time() - start_time)
+            )
 
     except Exception as e:
         logger.error(f"Problema con il caricamento del file:\n{e}")
@@ -231,7 +242,9 @@ async def stt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         logger.error(e)
         await update.message.reply_text(str(e))
 
+
 import re
+
 
 def is_youtube_link(text: str) -> bool:
     pattern = r"(https?://)?(www\.)?youtube\.com/+"
@@ -244,38 +257,42 @@ async def ytt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     logger.info(f"Request from: {update.message.from_user.username}")
     # Save the user
-    #save_user(update)
+    # save_user(update)
 
     if is_youtube_link(update.message.text):
         url = update.message.text
         with tempfile.TemporaryDirectory(dir="/tmp") as temp_dir:
             ydl_opts = {
-                'format': 'bestaudio/best',
-                'outtmpl': temp_dir + '/output',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'wav',
-                }],
+                "format": "bestaudio/best",
+                "outtmpl": temp_dir + "/output",
+                "postprocessors": [
+                    {
+                        "key": "FFmpegExtractAudio",
+                        "preferredcodec": "wav",
+                    }
+                ],
             }
+
             def download_from_url(url):
                 ydl.download([url])
-                stream = ffmpeg.input(temp_dir + '/output')
-                stream = ffmpeg.output(stream, temp_dir + '/output.wav')
-
+                stream = ffmpeg.input(temp_dir + "/output")
+                stream = ffmpeg.output(stream, temp_dir + "/output.wav")
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 download_from_url(url)
                 start_time = time.time()
-                segments, info = whisper.transcribe(temp_dir+"/output.wav", beam_size=5, vad_filter=True)
-                logger.info("Detected language '%s' with probability %f" % (info.language, info.language_probability))
+                segments, info = whisper.transcribe(
+                    temp_dir + "/output.wav", beam_size=5, vad_filter=True
+                )
+                logger.info(
+                    "Detected language '%s' with probability %f"
+                    % (info.language, info.language_probability)
+                )
                 transcription = "".join([segment.text for segment in segments])
-                logger.info("Transcription completed in %f seconds" % (time.time() - start_time))
+                logger.info(
+                    "Transcription completed in %f seconds" % (time.time() - start_time)
+                )
                 await update.message.reply_text(transcription)
-
-
-
-
-
 
 
 def main() -> None:
